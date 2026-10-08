@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Birthday Desk admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<main>
+<h1>Birthday Desk admin</h1>
+<p class="sub">View and remove registered birthdays.</p>
+<section>
+<label for="pw">Admin password</label>
+<input id="pw" type="password" autocomplete="current-password">
+<div class="row"><button class="primary" id="load">Load list</button><button id="test" style="margin-top:16px">Send test reminder</button></div>
+<div id="msg" role="status"></div>
+</section>
+<section><div id="list" class="meta">Enter the password to load the list.</div></section>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const M=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const H=()=>({"x-admin-password":$("pw").value});
+async function load(){
+  $("msg").textContent="";
+  const r=await fetch("/api/admin",{headers:H()});
+  if(!r.ok){$("msg").textContent=r.status===401?"Wrong password.":"Could not load.";return}
+  const rows=await r.json();
+  $("list").innerHTML=rows.length?`<div class="meta">${rows.length} registered</div>`+rows.map(x=>`<div class="item"><span>${esc(x.name)} <span class="meta">${x.day} ${M[x.month-1]}</span></span><button data-id="${x.id}" aria-label="Delete ${esc(x.name)}">Delete</button></div>`).join(""):"No entries yet.";
+}
+$("load").onclick=load;
+$("list").onclick=async e=>{
+  const id=e.target.dataset.id;
+  if(!id||!confirm("Delete this entry?"))return;
+  await fetch("/api/admin?id="+id,{method:"DELETE",headers:H()});
+  load();
+};
+$("test").onclick=async()=>{
+  $("msg").textContent="Sending...";
+  const r=await fetch("/api/cron?test=1",{headers:H()});
+  $("msg").textContent=r.ok?"Test sent. Check the admin's phone or inbox.":"Failed. Check the password and channel settings.";
+};
+</script>
+</body>
+</html>

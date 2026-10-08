@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Register your birthday</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<main>
+<h1>Register your birthday 🎂</h1>
+<p class="sub">So the group never misses celebrating you. It takes a minute.</p>
+<section>
+<form id="f" novalidate>
+<label for="name">Full name</label>
+<input id="name" name="name" autocomplete="name" maxlength="80" required>
+<div class="grid">
+<div><label for="month">Month</label><select id="month" name="month" required></select></div>
+<div><label for="day">Day</label><input id="day" name="day" type="number" min="1" max="31" inputmode="numeric" required></div>
+</div>
+<input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+<label class="check"><input type="checkbox" name="consent" required> I agree to my name and birthday (day and month) being stored and used to remind the group admin to celebrate me.</label>
+<button class="primary" type="submit">Register</button>
+<div id="msg" role="status"></div>
+</form>
+</section>
+</main>
+<script>
+const M=["January","February","March","April","May","June","July","August","September","October","November","December"];
+const f=document.getElementById("f"),msg=document.getElementById("msg");
+f.month.innerHTML='<option value="">Choose month</option>'+M.map((x,i)=>`<option value="${i+1}">${x}</option>`).join("");
+f.onsubmit=async e=>{
+  e.preventDefault();
+  msg.textContent="Saving...";
+  const data=Object.fromEntries(new FormData(f));
+  data.consent=f.consent.checked;
+  try{
+    const r=await fetch("/api/register",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
+    const j=await r.json();
+    if(r.ok){f.reset();msg.textContent="Thank you! Your birthday has been added. 🎉"}
+    else msg.textContent=j.error||"Something went wrong.";
+  }catch{msg.textContent="Network error. Please try again."}
+};
+</script>
+</body>
+</html>
