@@ -7,11 +7,18 @@
 <title>Birthday Desk admin</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/style.css">
+<style>
+h2{font-size:1.05rem;margin:16px 0 4px}
+.item img{width:44px;height:44px;border-radius:50%;object-fit:cover;flex:none}
+.who{display:flex;gap:10px;align-items:center}
+.row button{padding:6px 10px}
+button.ok{background:var(--acc);border-color:var(--acc);color:#fff}
+</style>
 </head>
 <body>
 <main>
 <h1>Birthday Desk admin</h1>
-<p class="sub">View and remove registered birthdays.</p>
+<p class="sub">Approve profiles, and remove entries.</p>
 <section>
 <label for="pw">Admin password</label>
 <input id="pw" type="password" autocomplete="current-password">
@@ -23,26 +30,33 @@
 <script>
 const $=id=>document.getElementById(id);
 const M=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const H=()=>({"x-admin-password":$("pw").value});
+const hasProfile=x=>x.photo_url||x.occupation;
+function row(x){
+  const act=x.approved?`<button data-act="hide" data-id="${x.id}">Hide</button>`:hasProfile(x)?`<button class="ok" data-act="approve" data-id="${x.id}">Approve</button>`:"";
+  return `<div class="item"><div class="who">${x.photo_url?`<img src="${esc(x.photo_url)}" alt="">`:""}<div><div>${esc(x.name)} <span class="meta">${x.day} ${M[x.month-1]}</span></div><div class="meta">${esc(x.occupation)}${x.approved?" · shown on members page":""}</div></div></div><div class="row">${act}<button data-act="del" data-id="${x.id}" aria-label="Delete ${esc(x.name)}">Delete</button></div></div>`;
+}
 async function load(){
   $("msg").textContent="";
   const r=await fetch("/api/admin",{headers:H()});
   if(!r.ok){$("msg").textContent=r.status===401?"Wrong password.":"Could not load.";return}
   const rows=await r.json();
-  $("list").innerHTML=rows.length?`<div class="meta">${rows.length} registered</div>`+rows.map(x=>`<div class="item"><span>${esc(x.name)} <span class="meta">${x.day} ${M[x.month-1]}</span></span><button data-id="${x.id}" aria-label="Delete ${esc(x.name)}">Delete</button></div>`).join(""):"No entries yet.";
+  const pend=rows.filter(x=>!x.approved&&hasProfile(x));
+  $("list").innerHTML=(pend.length?`<h2>Waiting for approval (${pend.length})</h2>`+pend.map(row).join(""):"")+`<h2>Everyone (${rows.length})</h2>`+rows.filter(x=>!pend.includes(x)).map(row).join("");
 }
 $("load").onclick=load;
 $("list").onclick=async e=>{
-  const id=e.target.dataset.id;
-  if(!id||!confirm("Delete this entry?"))return;
-  await fetch("/api/admin?id="+id,{method:"DELETE",headers:H()});
+  const {act,id}=e.target.dataset;
+  if(!act)return;
+  if(act==="del"){if(!confirm("Delete this entry completely (birthday, photo and profile)?"))return;await fetch("/api/admin?id="+id,{method:"DELETE",headers:H()})}
+  else await fetch(`/api/admin?id=${id}&approved=${act==="approve"?1:0}`,{method:"PATCH",headers:H()});
   load();
 };
 $("test").onclick=async()=>{
   $("msg").textContent="Sending...";
   const r=await fetch("/api/cron?test=1",{headers:H()});
-  $("msg").textContent=r.ok?"Test sent. Check the admin's phone or inbox.":"Failed. Check the password and channel settings.";
+  $("msg").textContent=r.ok?"Test sent. Check the admin's inbox.":"Failed. Check the password and email settings.";
 };
 </script>
 </body>
