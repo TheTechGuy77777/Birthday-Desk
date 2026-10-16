@@ -3,42 +3,52 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Register your birthday</title>
+<title>Join the group directory</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/style.css">
+<style>#prev{width:96px;height:96px;border-radius:50%;object-fit:cover;margin-top:8px;display:none}.links{margin-top:16px;font-size:.95rem}a{color:var(--acc)}</style>
 </head>
 <body>
 <main>
-<h1>Register your birthday 🎂</h1>
-<p class="sub">So the group never misses celebrating you. It takes a minute.</p>
+<h1>Join the group 🎂</h1>
+<p class="sub">Register your birthday, and tell the group a bit about you.</p>
 <section>
 <form id="f" novalidate>
 <label for="name">Full name</label>
 <input id="name" name="name" autocomplete="name" maxlength="80" required>
 <div class="grid">
-<div><label for="month">Month</label><select id="month" name="month" required></select></div>
-<div><label for="day">Day</label><input id="day" name="day" type="number" min="1" max="31" inputmode="numeric" required></div>
+<div><label for="month">Birth month</label><select id="month" name="month" required></select></div>
+<div><label for="day">Birth day</label><input id="day" name="day" type="number" min="1" max="31" inputmode="numeric" required></div>
 </div>
+<label for="occ">What do you do? (optional)</label>
+<input id="occ" name="occupation" maxlength="120" placeholder="e.g. Teacher, runs a bakery, engineer">
+<label for="pic">Your photo (optional)</label>
+<input id="pic" type="file" accept="image/*">
+<img id="prev" alt="Photo preview">
 <input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
-<label class="check"><input type="checkbox" name="consent" required> I agree to my name and birthday (day and month) being stored and used to remind the group admin to celebrate me.</label>
-<button class="primary" type="submit">Register</button>
+<label class="check"><input type="checkbox" name="consent" required> I agree to my name and birthday (day and month) being stored for reminders, and to my photo and "what I do", if I add them, being shown on the group's members page.</label>
+<button class="primary" type="submit">Submit</button>
 <div id="msg" role="status"></div>
 </form>
+<p class="links"><a href="/members.html">See the members page</a></p>
 </section>
 </main>
 <script>
 const M=["January","February","March","April","May","June","July","August","September","October","November","December"];
-const f=document.getElementById("f"),msg=document.getElementById("msg");
+const f=document.getElementById("f"),msg=document.getElementById("msg"),pic=document.getElementById("pic"),prev=document.getElementById("prev");
 f.month.innerHTML='<option value="">Choose month</option>'+M.map((x,i)=>`<option value="${i+1}">${x}</option>`).join("");
+function shrink(file){return new Promise((ok,no)=>{const img=new Image();img.onload=()=>{const r=Math.min(1,480/Math.max(img.width,img.height));const c=document.createElement("canvas");c.width=Math.round(img.width*r);c.height=Math.round(img.height*r);c.getContext("2d").drawImage(img,0,0,c.width,c.height);ok(c.toDataURL("image/jpeg",0.8))};img.onerror=no;img.src=URL.createObjectURL(file)})}
+pic.onchange=async()=>{if(!pic.files[0]){prev.style.display="none";return}try{prev.src=await shrink(pic.files[0]);prev.style.display="block"}catch{msg.textContent="That file isn't a usable picture.";pic.value=""}};
 f.onsubmit=async e=>{
   e.preventDefault();
   msg.textContent="Saving...";
   const data=Object.fromEntries(new FormData(f));
   data.consent=f.consent.checked;
+  if(pic.files[0]){try{data.photo=await shrink(pic.files[0])}catch{msg.textContent="That file isn't a usable picture.";return}}
   try{
     const r=await fetch("/api/register",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
     const j=await r.json();
-    if(r.ok){f.reset();msg.textContent="Thank you! Your birthday has been added. 🎉"}
+    if(r.ok){f.reset();prev.style.display="none";msg.textContent=j.pending?"Thank you! Your profile will show on the members page once the admin approves it. 🎉":"Thank you! Your birthday has been added. 🎉"}
     else msg.textContent=j.error||"Something went wrong.";
   }catch{msg.textContent="Network error. Please try again."}
 };
