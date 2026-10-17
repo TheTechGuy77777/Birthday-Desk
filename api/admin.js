@@ -9,7 +9,7 @@ module.exports = async (req, res) => {
   try {
     if (req.method === "GET") {
       const rows = await q(
-        "/birthdays?select=id,name,month,day,occupation,photo_url,approved&order=month.asc,day.asc,name.asc"
+        "/birthdays?select=id,name,month,day,occupation,photo_url,phone,approved&order=month.asc,day.asc,name.asc"
       );
       return res.json(rows);
     }
