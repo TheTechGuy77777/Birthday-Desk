@@ -32,10 +32,11 @@ const $=id=>document.getElementById(id);
 const M=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const H=()=>({"x-admin-password":$("pw").value});
-const hasProfile=x=>x.photo_url||x.occupation;
+const hasProfile=x=>x.photo_url||x.occupation||x.phone;
 function row(x){
   const act=x.approved?`<button data-act="hide" data-id="${x.id}">Hide</button>`:hasProfile(x)?`<button class="ok" data-act="approve" data-id="${x.id}">Approve</button>`:"";
-  return `<div class="item"><div class="who">${x.photo_url?`<img src="${esc(x.photo_url)}" alt="">`:""}<div><div>${esc(x.name)} <span class="meta">${x.day} ${M[x.month-1]}</span></div><div class="meta">${esc(x.occupation)}${x.approved?" · shown on members page":""}</div></div></div><div class="row">${act}<button data-act="del" data-id="${x.id}" aria-label="Delete ${esc(x.name)}">Delete</button></div></div>`;
+  const info=[x.occupation,x.phone].filter(Boolean).map(esc).join(" · ");
+  return `<div class="item"><div class="who">${x.photo_url?`<img src="${esc(x.photo_url)}" alt="">`:""}<div><div>${esc(x.name)} <span class="meta">${x.day} ${M[x.month-1]}</span></div><div class="meta">${info}${x.approved?(info?" · ":"")+"shown on members page":""}</div></div></div><div class="row">${act}<button data-act="del" data-id="${x.id}" aria-label="Delete ${esc(x.name)}">Delete</button></div></div>`;
 }
 async function load(){
   $("msg").textContent="";
