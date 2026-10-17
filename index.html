@@ -6,7 +6,7 @@
 <title>Join the group directory</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/style.css">
-<style>#prev{width:96px;height:96px;border-radius:50%;object-fit:cover;margin-top:8px;display:none}.links{margin-top:16px;font-size:.95rem}a{color:var(--acc)}</style>
+<style>#prev{width:96px;height:96px;border-radius:50%;object-fit:cover;margin-top:8px;display:none}.links{margin-top:16px;font-size:.95rem}a{color:var(--acc)}.hint{font-size:.85rem;color:var(--mute);margin-top:4px}</style>
 </head>
 <body>
 <main>
@@ -22,11 +22,14 @@
 </div>
 <label for="occ">What do you do? (optional)</label>
 <input id="occ" name="occupation" maxlength="120" placeholder="e.g. Teacher, runs a bakery, engineer">
+<label for="ph">Phone number (optional)</label>
+<input id="ph" name="phone" type="tel" autocomplete="tel" placeholder="+234 803 000 0000">
+<div class="hint">Include the country code. It will be shown to group members on the members page.</div>
 <label for="pic">Your photo (optional)</label>
 <input id="pic" type="file" accept="image/*">
 <img id="prev" alt="Photo preview">
 <input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
-<label class="check"><input type="checkbox" name="consent" required> I agree to my name and birthday (day and month) being stored for reminders, and to my photo and "what I do", if I add them, being shown on the group's members page.</label>
+<label class="check"><input type="checkbox" name="consent" required> I agree to my name and birthday (day and month) being stored for reminders, and to my photo, "what I do" and phone number, if I add them, being shown on the group's members page.</label>
 <button class="primary" type="submit">Submit</button>
 <div id="msg" role="status"></div>
 </form>
