@@ -3,38 +3,72 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
 <title>Group members</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/style.css">
 <style>
 main{max-width:900px}
-.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;text-align:center}
 .card img,.ph{width:96px;height:96px;border-radius:50%;object-fit:cover;margin:0 auto 10px;display:block}
 .ph{background:var(--line);display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:800;color:var(--mute)}
-.card b{display:block}.card span{color:var(--mute);font-size:.9rem}
+.card b{display:block}.card span{color:var(--mute);font-size:.9rem;display:block}
+.card .tel{margin-top:6px;font-size:.9rem}
 #s{margin-bottom:16px}a{color:var(--acc)}
+#gate{max-width:420px}
 </style>
 </head>
 <body>
 <main>
 <h1>Meet the group</h1>
+<section id="gate">
+<label for="code">Access code (shared in the group)</label>
+<input id="code" type="password" autocomplete="off">
+<button class="primary" id="go">Open</button>
+<div id="gm" role="status"></div>
+</section>
+<div id="view" hidden>
 <p class="sub">Who we are and what we do. <a href="/">Add yourself</a></p>
 <input id="s" type="search" placeholder="Search by name or what they do" aria-label="Search members">
 <div id="c" class="cards"></div>
 <p id="e" class="sub"></p>
+</div>
 </main>
 <script>
+const $=id=>document.getElementById(id);
 const esc=s=>String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const getC=()=>{try{return localStorage.getItem("md.code")||""}catch{return ""}};
+const setC=v=>{try{v?localStorage.setItem("md.code",v):localStorage.removeItem("md.code")}catch{}};
 let all=[];
 function show(){
-  const t=document.getElementById("s").value.toLowerCase();
+  const t=$("s").value.toLowerCase();
   const rows=all.filter(m=>(m.name+" "+(m.occupation||"")).toLowerCase().includes(t));
-  document.getElementById("c").innerHTML=rows.map(m=>`<div class="card">${m.photo_url?`<img src="${esc(m.photo_url)}" alt="${esc(m.name)}" loading="lazy">`:`<div class="ph" aria-hidden="true">${esc(m.name.trim()[0]||"?").toUpperCase()}</div>`}<b>${esc(m.name)}</b><span>${esc(m.occupation)}</span></div>`).join("");
-  document.getElementById("e").textContent=rows.length?"":(all.length?"No one matches your search.":"No profiles yet. Be the first to add yours!");
+  $("c").innerHTML=rows.map(m=>{
+    const tel=m.phone?`<div class="tel"><a href="tel:${esc(m.phone)}">${esc(m.phone)}</a> · <a href="https://wa.me/${esc(m.phone.replace(/\D/g,""))}" target="_blank" rel="noopener">WhatsApp</a></div>`:"";
+    return `<div class="card">${m.photo_url?`<img src="${esc(m.photo_url)}" alt="${esc(m.name)}" loading="lazy">`:`<div class="ph" aria-hidden="true">${esc(m.name.trim()[0]||"?").toUpperCase()}</div>`}<b>${esc(m.name)}</b><span>${esc(m.occupation)}</span>${tel}</div>`;
+  }).join("");
+  $("e").textContent=rows.length?"":(all.length?"No one matches your search.":"No profiles yet. Be the first to add yours!");
 }
-document.getElementById("s").oninput=show;
-fetch("/api/members").then(r=>r.json()).then(r=>{all=Array.isArray(r)?r:[];show()}).catch(()=>{document.getElementById("e").textContent="Could not load members. Refresh to try again."});
+async function open(code){
+  try{
+    const r=await fetch("/api/members",{headers:{"x-members-code":code}});
+    if(r.status===401){setC("");return "bad"}
+    if(!r.ok)return "err";
+    all=await r.json();
+    setC(code);$("gate").hidden=true;$("view").hidden=false;show();
+    return "ok";
+  }catch{return "err"}
+}
+$("s").oninput=show;
+$("go").onclick=async()=>{
+  $("gm").textContent="Checking...";
+  const s=await open($("code").value.trim());
+  if(s!=="ok")$("gm").textContent=s==="bad"?"That code isn't right.":"Something went wrong. Try again.";
+};
+$("code").onkeydown=e=>{if(e.key==="Enter")$("go").click()};
+const saved=getC();
+if(saved)open(saved).then(s=>{if(s==="bad")$("gm").textContent="The code has changed. Enter the new one."});
 </script>
 </body>
 </html>
